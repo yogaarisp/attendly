@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,12 +31,12 @@
         }
     </script>
     <script>
-        if (localStorage.getItem('attendly_theme') === 'light') {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.classList.add('light');
-        } else {
-            document.documentElement.classList.add('dark');
+        if (localStorage.getItem('attendly_theme') === 'dark') {
             document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
         }
     </script>
     <style>
