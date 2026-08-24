@@ -70,6 +70,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Employees
     Route::resource('employees', EmployeeController::class)->except(['show']);
+    Route::patch('/employees/{employee}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
 
     // Departments & Positions
     Route::resource('departments', DepartmentController::class)->except(['create', 'edit', 'show']);

@@ -101,16 +101,25 @@
                             </td>
                             <td class="px-4 py-3.5 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
+                                    {{-- Edit --}}
                                     <a href="{{ route('admin.employees.edit', $emp->id) }}"
                                         class="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors"
                                         title="Edit Data">
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                     </a>
+                                    {{-- Toggle aktif/nonaktif --}}
                                     <button type="button"
                                         onclick="confirmToggle({{ $emp->id }}, '{{ addslashes($emp->full_name) }}', '{{ $emp->status }}')"
-                                        class="p-1.5 {{ $emp->status === 'active' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' }} rounded-lg transition-colors cursor-pointer"
+                                        class="p-1.5 {{ $emp->status === 'active' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' }} rounded-lg transition-colors cursor-pointer"
                                         title="{{ $emp->status === 'active' ? 'Nonaktifkan' : 'Aktifkan Kembali' }}">
                                         <i data-lucide="{{ $emp->status === 'active' ? 'user-x' : 'user-check' }}" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    {{-- Hapus permanen --}}
+                                    <button type="button"
+                                        onclick="confirmDelete({{ $emp->id }}, '{{ addslashes($emp->full_name) }}', '{{ $emp->employee_code }}')"
+                                        class="p-1.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                                        title="Hapus Permanen">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </div>
                             </td>
@@ -158,8 +167,42 @@
     </div>
 </div>
 
-{{-- Hidden form untuk submit toggle --}}
+{{-- ── Modal Konfirmasi Hapus Permanen ──────────────────────────────── --}}
+<div id="modal-delete" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-500/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Hapus Permanen?</h3>
+                <p id="delete-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1"></p>
+            </div>
+        </div>
+        {{-- Warning box --}}
+        <div class="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 space-y-1">
+            <p class="font-bold flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Tindakan ini tidak dapat dibatalkan!</p>
+            <p>Seluruh data karyawan termasuk akun login dan riwayat absensi terkait akan ikut terhapus.</p>
+        </div>
+        <div class="flex gap-2 pt-1">
+            <button type="button" onclick="closeDeleteModal()"
+                class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer">
+                Batal
+            </button>
+            <button type="button" onclick="submitDelete()"
+                class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer">
+                Ya, Hapus Permanen
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- Hidden forms --}}
 <form id="form-toggle" method="POST" class="hidden">
+    @csrf
+    @method('PATCH')
+</form>
+<form id="form-delete" method="POST" class="hidden">
     @csrf
     @method('DELETE')
 </form>
@@ -169,24 +212,25 @@
 @push('scripts')
 <script>
     let toggleUrl = '';
+    let deleteUrl  = '';
 
+    // ── Toggle Aktif / Nonaktif ──────────────────────────────────────
     function confirmToggle(id, name, currentStatus) {
         const isActive = currentStatus === 'active';
-        toggleUrl = `/admin/employees/${id}`;
+        toggleUrl = `/admin/employees/${id}/toggle-status`;
 
-        const modal     = document.getElementById('modal-toggle');
-        const iconWrap  = document.getElementById('modal-icon-wrap');
-        const icon      = document.getElementById('modal-icon');
-        const title     = document.getElementById('modal-title');
-        const desc      = document.getElementById('modal-desc');
-        const btn       = document.getElementById('modal-confirm-btn');
+        const iconWrap = document.getElementById('modal-icon-wrap');
+        const icon     = document.getElementById('modal-icon');
+        const title    = document.getElementById('modal-title');
+        const desc     = document.getElementById('modal-desc');
+        const btn      = document.getElementById('modal-confirm-btn');
 
         if (isActive) {
-            iconWrap.className = 'w-10 h-10 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0';
+            iconWrap.className = 'w-10 h-10 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0';
             icon.setAttribute('data-lucide', 'user-x');
             title.textContent = `Nonaktifkan ${name}?`;
-            desc.textContent  = 'Karyawan tidak akan bisa login dan melakukan absensi. Anda bisa mengaktifkan kembali kapan saja.';
-            btn.className     = 'flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer';
+            desc.textContent  = 'Karyawan tidak akan bisa login dan melakukan absensi. Bisa diaktifkan kembali kapan saja.';
+            btn.className     = 'flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer';
             btn.textContent   = 'Ya, Nonaktifkan';
         } else {
             iconWrap.className = 'w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0';
@@ -198,7 +242,7 @@
         }
 
         lucide.createIcons();
-        modal.classList.remove('hidden');
+        document.getElementById('modal-toggle').classList.remove('hidden');
     }
 
     function closeToggleModal() {
@@ -211,9 +255,31 @@
         form.submit();
     }
 
-    // Tutup modal klik di luar
     document.getElementById('modal-toggle').addEventListener('click', function(e) {
         if (e.target === this) closeToggleModal();
+    });
+
+    // ── Hapus Permanen ───────────────────────────────────────────────
+    function confirmDelete(id, name, code) {
+        deleteUrl = `/admin/employees/${id}`;
+        document.getElementById('delete-desc').textContent =
+            `Karyawan "${name}" (${code}) akan dihapus secara permanen dari sistem.`;
+        lucide.createIcons();
+        document.getElementById('modal-delete').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('modal-delete').classList.add('hidden');
+    }
+
+    function submitDelete() {
+        const form = document.getElementById('form-delete');
+        form.action = deleteUrl;
+        form.submit();
+    }
+
+    document.getElementById('modal-delete').addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
     });
 </script>
 @endpush

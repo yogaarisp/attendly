@@ -178,19 +178,41 @@ class EmployeeController extends Controller
             ->with('success', 'Data karyawan berhasil diperbarui.');
     }
 
-    public function destroy(Employee $employee): RedirectResponse
+    public function toggleStatus(Employee $employee): RedirectResponse
     {
         $newStatus = ($employee->status === 'active') ? 'inactive' : 'active';
         $employee->update(['status' => $newStatus]);
 
         AuditLogService::log('EMPLOYEE_STATUS_CHANGED', 'employee', $employee->id, [
-            'status' => $newStatus,
-            'name' => $employee->full_name,
+            'employee_code' => $employee->employee_code,
+            'status'        => $newStatus,
+            'name'          => $employee->full_name,
         ]);
 
         $statusMsg = ($newStatus === 'active') ? 'diaktifkan kembali' : 'dinonaktifkan';
 
         return redirect()->route('admin.employees.index')
             ->with('success', "Karyawan {$employee->full_name} berhasil {$statusMsg}.");
+    }
+
+    public function destroy(Employee $employee): RedirectResponse
+    {
+        $name = $employee->full_name;
+        $code = $employee->employee_code;
+
+        DB::transaction(function () use ($employee) {
+            // Hapus user akun terkait
+            $employee->user()->delete();
+            // Hapus employee (beserta relasi via cascade di migration)
+            $employee->delete();
+        });
+
+        AuditLogService::log('EMPLOYEE_DELETED', 'employee', null, [
+            'employee_code' => $code,
+            'name'          => $name,
+        ]);
+
+        return redirect()->route('admin.employees.index')
+            ->with('success', "Karyawan {$name} ({$code}) berhasil dihapus secara permanen.");
     }
 }
