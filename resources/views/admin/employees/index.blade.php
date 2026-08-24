@@ -101,16 +101,17 @@
                             </td>
                             <td class="px-4 py-3.5 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('admin.employees.edit', $emp->id) }}" class="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors" title="Edit Data">
+                                    <a href="{{ route('admin.employees.edit', $emp->id) }}"
+                                        class="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors"
+                                        title="Edit Data">
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                     </a>
-                                    <form action="{{ route('admin.employees.destroy', $emp->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengubah status aktif karyawan ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 {{ $emp->status === 'active' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' }} rounded-lg transition-colors cursor-pointer" title="{{ $emp->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}">
-                                            <i data-lucide="{{ $emp->status === 'active' ? 'user-x' : 'user-check' }}" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button"
+                                        onclick="confirmToggle({{ $emp->id }}, '{{ addslashes($emp->full_name) }}', '{{ $emp->status }}')"
+                                        class="p-1.5 {{ $emp->status === 'active' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' }} rounded-lg transition-colors cursor-pointer"
+                                        title="{{ $emp->status === 'active' ? 'Nonaktifkan' : 'Aktifkan Kembali' }}">
+                                        <i data-lucide="{{ $emp->status === 'active' ? 'user-x' : 'user-check' }}" class="w-3.5 h-3.5"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -131,4 +132,88 @@
     </div>
 
 </div>
+
+{{-- ── Modal Konfirmasi Toggle Status ────────────────────────────────── --}}
+<div id="modal-toggle" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+        <div class="flex items-start gap-3">
+            <div id="modal-icon-wrap" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                <i id="modal-icon" data-lucide="user-x" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 id="modal-title" class="text-sm font-bold text-slate-900 dark:text-white"></h3>
+                <p id="modal-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1"></p>
+            </div>
+        </div>
+        <div class="flex gap-2 pt-1">
+            <button type="button" onclick="closeToggleModal()"
+                class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer">
+                Batal
+            </button>
+            <button type="button" id="modal-confirm-btn" onclick="submitToggle()"
+                class="flex-1 py-2.5 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer">
+                Konfirmasi
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- Hidden form untuk submit toggle --}}
+<form id="form-toggle" method="POST" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
+
 @endsection
+
+@push('scripts')
+<script>
+    let toggleUrl = '';
+
+    function confirmToggle(id, name, currentStatus) {
+        const isActive = currentStatus === 'active';
+        toggleUrl = `/admin/employees/${id}`;
+
+        const modal     = document.getElementById('modal-toggle');
+        const iconWrap  = document.getElementById('modal-icon-wrap');
+        const icon      = document.getElementById('modal-icon');
+        const title     = document.getElementById('modal-title');
+        const desc      = document.getElementById('modal-desc');
+        const btn       = document.getElementById('modal-confirm-btn');
+
+        if (isActive) {
+            iconWrap.className = 'w-10 h-10 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0';
+            icon.setAttribute('data-lucide', 'user-x');
+            title.textContent = `Nonaktifkan ${name}?`;
+            desc.textContent  = 'Karyawan tidak akan bisa login dan melakukan absensi. Anda bisa mengaktifkan kembali kapan saja.';
+            btn.className     = 'flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer';
+            btn.textContent   = 'Ya, Nonaktifkan';
+        } else {
+            iconWrap.className = 'w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0';
+            icon.setAttribute('data-lucide', 'user-check');
+            title.textContent = `Aktifkan kembali ${name}?`;
+            desc.textContent  = 'Karyawan akan bisa login dan melakukan absensi kembali.';
+            btn.className     = 'flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl text-xs text-white transition-colors cursor-pointer';
+            btn.textContent   = 'Ya, Aktifkan';
+        }
+
+        lucide.createIcons();
+        modal.classList.remove('hidden');
+    }
+
+    function closeToggleModal() {
+        document.getElementById('modal-toggle').classList.add('hidden');
+    }
+
+    function submitToggle() {
+        const form = document.getElementById('form-toggle');
+        form.action = toggleUrl;
+        form.submit();
+    }
+
+    // Tutup modal klik di luar
+    document.getElementById('modal-toggle').addEventListener('click', function(e) {
+        if (e.target === this) closeToggleModal();
+    });
+</script>
+@endpush
