@@ -44,7 +44,7 @@
 
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Alamat Lengkap</label>
-                    <textarea name="address" rows="2" class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500">{{ old('address', $branch->address) }}</textarea>
+                    <textarea name="address" id="address_input" rows="2" placeholder="Klik peta di bawah — alamat lengkap akan terisi otomatis..." class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500">{{ old('address', $branch->address) }}</textarea>
                 </div>
 
                 <div>
@@ -87,6 +87,13 @@
                             <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Radius (Meter)</label>
                             <input type="number" name="radius_meter" value="{{ old('radius_meter', $branch->radius_meter) }}" min="10" max="5000" required class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500 font-mono">
                         </div>
+                    </div>
+
+                    <!-- Peta interaktif: klik/geser pin untuk atur titik + alamat otomatis -->
+                    <div id="branch_map" class="h-64 w-full rounded-xl border border-slate-200 dark:border-slate-700 z-0 overflow-hidden"></div>
+                    <div class="flex items-start gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-brand-500"></i>
+                        <span id="address_preview" class="italic">Klik peta atau geser pin untuk mengatur titik — alamat lengkap akan terisi otomatis.</span>
                     </div>
                 </div>
 
@@ -144,24 +151,7 @@
 @endsection
 
 @push('scripts')
-<script>
-    function detectCurrentLocation() {
-        if (!navigator.geolocation) {
-            alert('Browser tidak mendukung Geolocation.');
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                document.getElementById('latitude_input').value = pos.coords.latitude.toFixed(8);
-                document.getElementById('longitude_input').value = pos.coords.longitude.toFixed(8);
-                alert(`Lokasi berhasil diperbarui: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
-            },
-            (err) => {
-                alert('Gagal mendeteksi lokasi: ' + err.message);
-            },
-            { enableHighAccuracy: true }
-        );
-    }
-</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ asset('js/branch-location-picker.js') }}"></script>
 @endpush
