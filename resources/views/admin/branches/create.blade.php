@@ -42,8 +42,14 @@
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Alamat Lengkap</label>
-                    <textarea name="address" id="address_input" rows="2" placeholder="Klik peta di bawah — alamat lengkap akan terisi otomatis..." class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500">{{ old('address') }}</textarea>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Alamat Lengkap</label>
+                        <button type="button" id="address_search_btn" class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-semibold transition-colors">
+                            <i data-lucide="search" class="w-3 h-3"></i>
+                            <span>Cari di Peta</span>
+                        </button>
+                    </div>
+                    <textarea name="address" id="address_input" rows="2" placeholder="Tulis alamat (contoh: Jl Sudirman No 25, Jakarta) lalu tekan Enter atau klik Cari di Peta — koordinat & peta otomatis mengikuti..." class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500">{{ old('address') }}</textarea>
                 </div>
 
                 <div>
