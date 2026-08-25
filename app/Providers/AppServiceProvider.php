@@ -28,5 +28,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->email.$request->ip());
         });
+
+        $appUrl = (string) config('app.url');
+        if (str_starts_with($appUrl, 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
     }
 }

@@ -320,7 +320,7 @@
         `;
 
         const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const requestUrl = "{{ route('employee.attendance.checkout.store') }}";
+        const requestUrl = "{{ route('employee.attendance.checkout.store', [], false) }}";
         const requestBody = JSON.stringify({
             latitude:    currentCoords.latitude,
             longitude:   currentCoords.longitude,

@@ -348,7 +348,7 @@
         `;
 
         const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const requestUrl = "{{ route('employee.attendance.checkin.store') }}";
+        const requestUrl = "{{ route('employee.attendance.checkin.store', [], false) }}";
         const requestBody = JSON.stringify({
             latitude:    currentCoords.latitude,
             longitude:   currentCoords.longitude,
