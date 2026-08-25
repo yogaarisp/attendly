@@ -270,8 +270,14 @@
     }
 
     function takeSnapshot() {
-        const width = videoEl.videoWidth || 640;
-        const height = videoEl.videoHeight || 640;
+        const srcW = videoEl.videoWidth || 640;
+        const srcH = videoEl.videoHeight || 640;
+
+        // Kompres: sisi terpanjang maks 640px agar payload ringan & tahan koneksi lemah
+        const maxDim = 640;
+        const scale  = Math.min(1, maxDim / Math.max(srcW, srcH));
+        const width  = Math.round(srcW * scale);
+        const height = Math.round(srcH * scale);
 
         canvasEl.width = width;
         canvasEl.height = height;
@@ -281,7 +287,7 @@
         ctx.scale(-1, 1);
         ctx.drawImage(videoEl, 0, 0, width, height);
 
-        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.85);
+        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.8);
 
         videoEl.classList.add('hidden');
         canvasEl.classList.remove('hidden');
@@ -313,23 +319,42 @@
             <span>Memproses Absen...</span>
         `;
 
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const requestUrl = "{{ route('employee.attendance.checkout.store') }}";
+        const requestBody = JSON.stringify({
+            latitude:    currentCoords.latitude,
+            longitude:   currentCoords.longitude,
+            accuracy:    currentCoords.accuracy,
+            photo:       capturedPhotoData,
+            gps_samples: gpsSamples,
+        });
+
         try {
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const response = await fetch("{{ route('employee.attendance.checkout.store') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token
-                },
-                body: JSON.stringify({
-                    latitude:    currentCoords.latitude,
-                    longitude:   currentCoords.longitude,
-                    accuracy:    currentCoords.accuracy,
-                    photo:       capturedPhotoData,
-                    gps_samples: gpsSamples,
-                })
-            });
+            // Auto-retry hingga 3x jika koneksi gagal saat upload (mis. sinyal lemah)
+            const MAX_ATTEMPTS = 3;
+            let response = null;
+
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    response = await fetch(requestUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': token
+                        },
+                        body: requestBody
+                    });
+                    break; // server menjawab, berhenti retry
+                } catch (networkErr) {
+                    if (attempt === MAX_ATTEMPTS) throw networkErr;
+                    btnSubmit.innerHTML = `
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Koneksi gagal, mengulang (${attempt + 1}/${MAX_ATTEMPTS})...</span>
+                    `;
+                    await new Promise(r => setTimeout(r, 1500 * attempt));
+                }
+            }
 
             const result = await response.json();
 
@@ -346,7 +371,7 @@
             }
         } catch (err) {
             console.error('Submit error:', err);
-            alert('Terjadi kendala jaringan saat mengirim absensi: ' + err.message);
+            alert('Koneksi internet tidak stabil saat mengirim absensi. Pastikan sinyal kuat (coba WiFi atau pindah lokasi), lalu tekan Konfirmasi Pulang lagi.');
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Konfirmasi Pulang</span>`;
             lucide.createIcons();

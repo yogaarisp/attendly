@@ -11,7 +11,12 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     // Offline attendance is strictly prohibited per PRD section 48.
-    // Pass requests through to network.
+    // Non-GET requests (e.g. attendance POST) must pass through untouched so
+    // network errors reach the page and the auto-retry logic can kick in.
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
     event.respondWith(
         fetch(event.request).catch(() => {
             return new Response(
